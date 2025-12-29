@@ -174,3 +174,5 @@ poetry.toml
 pyrightconfig.json
 
 .env
+
+hospital_data.csv
