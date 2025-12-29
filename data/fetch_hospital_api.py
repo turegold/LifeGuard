@@ -8,7 +8,6 @@ from config import SERVICE_KEY, API_URL
 # 공공 응급의료 API 호출 후 DataFrame 반환
 
 def fetch_emergency_data(
-    service_key: str,
     stage1: str,
     stage2: str,
     page_no: int = 1,
@@ -16,7 +15,7 @@ def fetch_emergency_data(
 ) -> pd.DataFrame:
 
     params = {
-        "serviceKey": service_key,
+        "serviceKey": SERVICE_KEY,
         "STAGE1": stage1,
         "STAGE2": stage2,
         "pageNo": page_no,
@@ -45,13 +44,15 @@ def fetch_emergency_data(
         rows.append(row)
 
     df = pd.DataFrame(rows)
+
+    df.columns = df.columns.str.lower()
+
     return df
 
 
 if __name__ == "__main__":
 
     df = fetch_emergency_data(
-        service_key=SERVICE_KEY,
         stage1="서울특별시",
         stage2="강남구",
         page_no=1,
@@ -59,4 +60,7 @@ if __name__ == "__main__":
     )
 
     print(f"데이터 개수: {len(df)}")
-    print(df.head())
+
+    # CSV로 저장
+    df.to_csv("hospital_data.csv", index=False, encoding="utf-8-sig")
+    print(df.head().T)
