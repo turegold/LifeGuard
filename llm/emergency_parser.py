@@ -106,7 +106,7 @@ def parse_emergency_text(user_input: str) -> dict:
 # 테스트 실행
 
 if __name__ == "__main__":
-    test_input = "아버지가 숨을 잘 못 쉬고 가슴 통증이 심해요. 식은땀을 흘리고 있습니다."
+    test_input = "어떤 남자가 흉부에 칼을 찔려서 쓰러져있습니다."
 
     result = parse_emergency_text(test_input)
 
