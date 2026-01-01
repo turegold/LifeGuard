@@ -176,3 +176,5 @@ pyrightconfig.json
 .env
 
 hospital_data.csv
+
+ml_input_features.csv

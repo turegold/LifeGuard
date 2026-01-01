@@ -45,7 +45,8 @@ def fetch_emergency_data(
 
     df = pd.DataFrame(rows)
 
-    df.columns = df.columns.str.lower()
+    if not df.empty:
+        df.columns = df.columns.astype(str).str.lower()
 
     return df
 

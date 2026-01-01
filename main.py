@@ -1,46 +1,56 @@
-from hospital.filtering import filter_hospitals
-from data.fetch_hospital_api import fetch_emergency_data
-from llm.emergency_parser import parse_emergency_text
-from hospital.distance import add_distance_features
+import os
+import pandas as pd
+
+from src.hospital.search import search_nearby_hospitals
+from src.llm.emergency_parser import parse_emergency_text
+from src.ml.feature_builder import build_ml_features
+
 
 def main():
-    # (임시) 내 위치
+    # 내 위치(임시)
     user_lat = 37.6213508
     user_lon = 127.0562448
-    # 1. 환자 입력 → LLM 파싱
+
+    # LLM에게 보낼 텍스트
     patient_info = parse_emergency_text(
-        "아버지가 숨을 잘 못 쉬고 가슴 통증이 심해요. 식은땀을 흘리고 있습니다."
+        "아버지가 칼에 흉부를 찔려 쓰러져 있고 피가 많이 납니다."
     )
 
-    # 2. 병원 데이터 불러오기
-    hospital_df = fetch_emergency_data(
-        stage1="서울특별시",
-        stage2="강남구"
-    )
 
-    # 3. 후보 병원 필터링
-    filtered_df = filter_hospitals(hospital_df, patient_info)
-
-    # 4. 거리/ 시간 Feature 추가
-    filtered_df = add_distance_features(
-        filtered_df,
+    result_df = search_nearby_hospitals(
+        city="서울특별시",
+        district="강남구",
+        patient_info=patient_info,
         user_lat=user_lat,
         user_lon=user_lon
     )
 
-    print(f"전체 병원 수: {len(hospital_df)}")
-    print(f"수용 가능 병원 수: {len(filtered_df)}")
+    if result_df.empty:
+        print("❌ 병원 후보 없음")
+        return
 
-    print(
-        filtered_df[
-            [
-                "dutyname",
-                "dutytel3",
-                "distance_km",
-                "estimated_travel_time_min",
-            ]
-        ].sort_values("distance_km")
-    )
+
+    # ML Feature 생성
+    ml_features = []
+
+    for _, row in result_df.iterrows():
+        feature = build_ml_features(row, patient_info)
+        ml_features.append(feature)
+
+    ml_df = pd.DataFrame(ml_features)
+
+
+    # 저장 (임시)
+    PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+    DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    csv_path = os.path.join(DATA_DIR, "ml_input_features.csv")
+
+    ml_df.to_csv(csv_path, index=False, encoding="utf-8-sig")
+
+    print(f"✅ ML 입력용 feature CSV 생성 완료: {csv_path}")
+    print(ml_df.head())
 
 
 if __name__ == "__main__":
