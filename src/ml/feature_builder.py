@@ -12,6 +12,13 @@ def build_ml_features(
     is_weekend = 1 if now.weekday() >= 5 else 0
 
     features = {
+        # =========================
+        # Hospital Identity (META)
+        # =========================
+        "hospital_name": hospital_row.get("dutyname"),
+        "hospital_id": hospital_row.get("hpid"),
+        "hospital_phone": hospital_row.get("dutytel3"),
+
         # Patient (LLM-derived)
         "severity": patient_info.get("severity"),
         "cond_trauma": 1 if patient_info.get("suspected_condition") == "TRAUMA" else 0,
