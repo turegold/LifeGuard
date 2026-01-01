@@ -1,5 +1,5 @@
 import math
-from hospital.location import get_hospital_location
+from src.hospital.location import get_hospital_location
 
 # 두 좌표 간 거리 계산
 def haversine_distance(lat1, lon1, lat2, lon2) -> float:

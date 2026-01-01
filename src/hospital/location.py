@@ -8,8 +8,13 @@ load_dotenv()
 KAKAO_API_KEY = os.getenv("KAKAO_REST_API_KEY")
 
 KAKAO_SEARCH_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CACHE_PATH = os.path.join(BASE_DIR, "data", "hospital_location_cache.json")
+
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
+
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+CACHE_PATH = os.path.join(DATA_DIR, "hospital_location_cache.json")
 
 
 
