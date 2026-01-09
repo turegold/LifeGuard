@@ -1,59 +1,88 @@
 from datetime import datetime
 
+SEVERITY_MAP = {"LOW": 0, "MEDIUM": 1, "HIGH": 2}
 
-def build_ml_features(
-    hospital_row,
-    patient_info: dict
-) -> dict:
+def to_int(x, default=0):
+    try:
+        if x is None:
+            return default
+        return int(x)
+    except:
+        return default
 
+def to_float(x, default=0.0):
+    try:
+        if x is None:
+            return default
+        return float(x)
+    except:
+        return default
+
+
+def build_ml_features(hospital_row, patient_info: dict) -> dict:
     now = datetime.now()
     hour = now.hour
     is_night = 1 if (hour >= 22 or hour <= 6) else 0
     is_weekend = 1 if now.weekday() >= 5 else 0
 
+    # ✅ severity 문자열 -> 숫자 변환
+    sev = patient_info.get("severity")
+    if isinstance(sev, str):
+        severity_val = SEVERITY_MAP.get(sev.upper(), 1)
+    else:
+        severity_val = to_int(sev, default=1)
+
     features = {
         # =========================
-        # Hospital Identity (META)
+        # Hospital Identity (META) ✅ 추가
         # =========================
         "hospital_name": hospital_row.get("dutyname"),
         "hospital_id": hospital_row.get("hpid"),
         "hospital_phone": hospital_row.get("dutytel3"),
 
+        # =========================
         # Patient (LLM-derived)
-        "severity": patient_info.get("severity"),
+        # =========================
+        "severity": severity_val,
         "cond_trauma": 1 if patient_info.get("suspected_condition") == "TRAUMA" else 0,
-        "need_icu": int(patient_info["required_resources"]["need_icu"]),
-        "need_ventilator": int(patient_info["required_resources"]["need_ventilator"]),
-        "need_ct": int(patient_info["required_resources"]["need_ct"]),
-        "need_mri": int(patient_info["required_resources"]["need_mri"]),
-        "llm_confidence": patient_info.get("confidence", 0.0),
+        "need_icu": to_int(patient_info.get("required_resources", {}).get("need_icu", 0)),
+        "need_ventilator": to_int(patient_info.get("required_resources", {}).get("need_ventilator", 0)),
+        "need_ct": to_int(patient_info.get("required_resources", {}).get("need_ct", 0)),
+        "need_mri": to_int(patient_info.get("required_resources", {}).get("need_mri", 0)),
+        "llm_confidence": to_float(patient_info.get("confidence", 0.0)),
 
+        # =========================
         # Hospital (Public API)
-        "er_beds": hospital_row.get("hvec", 0),
-        "icu_beds": hospital_row.get("hvicc", 0),
-        "trauma_icu_beds": hospital_row.get("hv9", 0),
+        # =========================
+        "er_beds": to_int(hospital_row.get("hvec", 0)),
+        "icu_beds": to_int(hospital_row.get("hvicc", 0)),
+        "trauma_icu_beds": to_int(hospital_row.get("hv9", 0)),
         "ct_available": 1 if hospital_row.get("hvctayn") == "Y" else 0,
         "ventilator_available": 1 if hospital_row.get("hvventiayn") == "Y" else 0,
 
-
+        # =========================
         # Distance / Transport
-        "distance_km": hospital_row.get("distance_km"),
-        "travel_time_min": hospital_row.get("estimated_travel_time_min"),
+        # =========================
+        "distance_km": to_float(hospital_row.get("distance_km", 0.0)),
+        "travel_time_min": to_float(hospital_row.get("estimated_travel_time_min", 0.0)),
 
+        # =========================
+        # Location
+        # =========================
+        "same_district": to_int(hospital_row.get("same_district", 0)),
+        "district_level": to_int(hospital_row.get("district_level", 2)),
 
-        # Location (Administrative)
-        "same_district": hospital_row.get("same_district"),
-        "district_level": hospital_row.get("district_level"),
-
-
+        # =========================
         # Time Context
-        "hour": hour,
-        "is_night": is_night,
-        "is_weekend": is_weekend,
+        # =========================
+        "hour": to_int(hour),
+        "is_night": to_int(is_night),
+        "is_weekend": to_int(is_weekend),
 
-
+        # =========================
         # Filtering
-        "filter_level": hospital_row.get("filter_level"),
+        # =========================
+        "filter_level": to_int(hospital_row.get("filter_level", 3)),
     }
 
     return features

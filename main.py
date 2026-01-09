@@ -4,6 +4,7 @@ import pandas as pd
 from src.hospital.search import search_nearby_hospitals
 from src.llm.emergency_parser import parse_emergency_text
 from src.ml.feature_builder import build_ml_features
+from src.ml.recommend import recommend_hospitals
 
 
 def main():
@@ -16,7 +17,7 @@ def main():
         "아버지가 칼에 흉부를 찔려 쓰러져 있고 피가 많이 납니다."
     )
 
-
+    # 주변 병원 후보 탐색
     result_df = search_nearby_hospitals(
         city="서울특별시",
         district="강남구",
@@ -29,28 +30,66 @@ def main():
         print("❌ 병원 후보 없음")
         return
 
-
+    # =========================
     # ML Feature 생성
+    # =========================
     ml_features = []
+    hospital_payloads = []  # ✅ recommend_hospitals에 넘길 리스트
 
     for _, row in result_df.iterrows():
         feature = build_ml_features(row, patient_info)
         ml_features.append(feature)
 
+        # ✅ meta는 row가 아니라 feature에서 꺼내기 (None 방지)
+        hospital_payloads.append({
+            "meta": {
+                "hospital_name": feature.get("hospital_name"),
+                "hospital_id": feature.get("hospital_id"),
+                "hospital_phone": feature.get("hospital_phone"),
+            },
+            "features": feature
+        })
+
     ml_df = pd.DataFrame(ml_features)
 
-
-    # 저장 (임시)
+    # =========================
+    # CSV 저장
+    # =========================
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
     DATA_DIR = os.path.join(PROJECT_ROOT, "data")
     os.makedirs(DATA_DIR, exist_ok=True)
 
     csv_path = os.path.join(DATA_DIR, "ml_input_features.csv")
-
     ml_df.to_csv(csv_path, index=False, encoding="utf-8-sig")
 
     print(f"✅ ML 입력용 feature CSV 생성 완료: {csv_path}")
     print(ml_df.head())
+
+    # =========================
+    # ✅ ML 추천 (확률 예측 + threshold + Top-K)
+    # =========================
+    recommendations = recommend_hospitals(
+        hospital_payloads,
+        threshold=0.01,
+        top_k=5,
+        max_filter_level=2,
+    )
+
+    print("\n🔥 추천 병원 Top-K 결과:")
+    if not recommendations:
+        print("⚠️ 조건(필터/threshold)에 의해 추천 결과가 없습니다.")
+        return
+
+    for rank, r in enumerate(recommendations, start=1):
+        name = r.get("hospital_name", "UNKNOWN")
+        hid = r.get("hospital_id", "UNKNOWN")
+        phone = r.get("hospital_phone", "UNKNOWN")
+        prob = r.get("accept_prob", None)
+
+        if prob is None:
+            print(f"{rank}위 | {name} (ID: {hid}) | 전화: {phone}")
+        else:
+            print(f"{rank}위 | {name} (ID: {hid}) | 전화: {phone} | 수용확률={prob:.3f}")
 
 
 if __name__ == "__main__":
