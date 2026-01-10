@@ -2,6 +2,7 @@ from datetime import datetime
 
 SEVERITY_MAP = {"LOW": 0, "MEDIUM": 1, "HIGH": 2}
 
+
 def to_int(x, default=0):
     try:
         if x is None:
@@ -9,6 +10,7 @@ def to_int(x, default=0):
         return int(x)
     except:
         return default
+
 
 def to_float(x, default=0.0):
     try:
@@ -19,22 +21,48 @@ def to_float(x, default=0.0):
         return default
 
 
+def safe_ratio(num, denom, default=0.0):
+    try:
+        num = float(num)
+        denom = float(denom)
+        if denom <= 0:
+            return default
+        return num / denom
+    except:
+        return default
+
+
 def build_ml_features(hospital_row, patient_info: dict) -> dict:
     now = datetime.now()
     hour = now.hour
     is_night = 1 if (hour >= 22 or hour <= 6) else 0
     is_weekend = 1 if now.weekday() >= 5 else 0
 
-    # ✅ severity 문자열 -> 숫자 변환
+    # =========================
+    # Severity 변환
+    # =========================
     sev = patient_info.get("severity")
     if isinstance(sev, str):
         severity_val = SEVERITY_MAP.get(sev.upper(), 1)
     else:
         severity_val = to_int(sev, default=1)
 
+    # =========================
+    # 실시간 병상 수
+    # =========================
+    er_beds = to_int(hospital_row.get("hvec", 0))
+    icu_beds = to_int(hospital_row.get("hvicc", 0))
+
+    # =========================
+    # 전체 병상 수 (정적)
+    # =========================
+    total_er_beds = to_int(hospital_row.get("total_hvec", 0))
+    total_icu_beds = to_int(hospital_row.get("total_hvicc", 0))
+    total_beds = to_int(hospital_row.get("total_hpbdn", 0))
+
     features = {
         # =========================
-        # Hospital Identity (META) ✅ 추가
+        # Hospital Identity
         # =========================
         "hospital_name": hospital_row.get("dutyname"),
         "hospital_id": hospital_row.get("hpid"),
@@ -52,13 +80,26 @@ def build_ml_features(hospital_row, patient_info: dict) -> dict:
         "llm_confidence": to_float(patient_info.get("confidence", 0.0)),
 
         # =========================
-        # Hospital (Public API)
+        # Hospital (Realtime)
         # =========================
-        "er_beds": to_int(hospital_row.get("hvec", 0)),
-        "icu_beds": to_int(hospital_row.get("hvicc", 0)),
+        "er_beds": er_beds,
+        "icu_beds": icu_beds,
         "trauma_icu_beds": to_int(hospital_row.get("hv9", 0)),
         "ct_available": 1 if hospital_row.get("hvctayn") == "Y" else 0,
         "ventilator_available": 1 if hospital_row.get("hvventiayn") == "Y" else 0,
+
+        # =========================
+        # Hospital (Static - TOTAL)
+        # =========================
+        "total_er_beds": total_er_beds,
+        "total_icu_beds": total_icu_beds,
+        "total_beds": total_beds,
+
+        # =========================
+        # Ratio Features
+        # =========================
+        "er_bed_ratio": safe_ratio(er_beds, total_er_beds),
+        "icu_bed_ratio": safe_ratio(icu_beds, total_icu_beds),
 
         # =========================
         # Distance / Transport
@@ -75,9 +116,9 @@ def build_ml_features(hospital_row, patient_info: dict) -> dict:
         # =========================
         # Time Context
         # =========================
-        "hour": to_int(hour),
-        "is_night": to_int(is_night),
-        "is_weekend": to_int(is_weekend),
+        "hour": hour,
+        "is_night": is_night,
+        "is_weekend": is_weekend,
 
         # =========================
         # Filtering
