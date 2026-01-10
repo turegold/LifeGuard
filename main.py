@@ -5,6 +5,8 @@ from src.hospital.search import search_nearby_hospitals
 from src.llm.emergency_parser import parse_emergency_text
 from src.ml.feature_builder import build_ml_features
 from src.ml.recommend import recommend_hospitals
+from src.utils.rank_merger import merge_rank_with_payloads
+from src.llm.hospital_explainer import explain_hospital_ranking
 
 
 def main():
@@ -90,6 +92,21 @@ def main():
             print(f"{rank}위 | {name} (ID: {hid}) | 전화: {phone}")
         else:
             print(f"{rank}위 | {name} (ID: {hid}) | 전화: {phone} | 수용확률={prob:.3f}")
+
+    final_results = merge_rank_with_payloads(
+        recommendations,
+        hospital_payloads
+    )
+
+
+    # 병원 랭킹 설명 (LLM)
+    explanation = explain_hospital_ranking(
+        final_results,
+        patient_info
+    )
+
+    print("\n 병원 추천 이유 설명:")
+    print(explanation)
 
 
 if __name__ == "__main__":
