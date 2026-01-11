@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import json
 
 from src.hospital.search import search_nearby_hospitals
 from src.llm.emergency_parser import parse_emergency_text
@@ -7,6 +8,7 @@ from src.ml.feature_builder import build_ml_features
 from src.ml.recommend import recommend_hospitals
 from src.utils.rank_merger import merge_rank_with_payloads
 from src.llm.hospital_explainer import explain_hospital_ranking
+from src.rag.rag_guidance import generate_emergency_guidance
 
 
 def main():
@@ -14,9 +16,11 @@ def main():
     user_lat = 37.6213508
     user_lon = 127.0562448
 
+    emergency_text = "아버지가 칼에 흉부를 찔려 쓰러져 있고 피가 많이 납니다."
+
     # LLM에게 보낼 텍스트
     patient_info = parse_emergency_text(
-        "아버지가 칼에 흉부를 찔려 쓰러져 있고 피가 많이 납니다."
+        emergency_text
     )
 
     # 주변 병원 후보 탐색
@@ -107,6 +111,12 @@ def main():
 
     print("\n 병원 추천 이유 설명:")
     print(explanation)
+
+    # 응급 대응 지침 (RAG)
+    guidance = generate_emergency_guidance(emergency_text)
+
+    print("\n🚨 응급 대응 지침")
+    print(json.dumps(guidance, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
