@@ -42,7 +42,13 @@ def recommend_hospitals(
 
         df_row = payload_to_df(features)
         rows.append(df_row)
-        metas.append(meta)
+
+        # 거리랑 시간 추가함 -용민-
+        metas.append({
+            **meta,
+            "distance_km": features.get("distance_km"),
+            "travel_time_min": features.get("travel_time_min"),
+        })
 
     if not rows:
         return []
