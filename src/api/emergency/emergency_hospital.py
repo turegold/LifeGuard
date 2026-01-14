@@ -29,8 +29,8 @@ def recommend_emergency_hospitals(req: EmergencyHospitalRequest):
     # 2. 병원 후보 탐색
     # =========================
     result_df = search_nearby_hospitals(
-        city="서울특별시",          # ⚠️ 나중에 위치 기반으로 개선
-        district="강남구",
+        city=None,
+        district=None,
         patient_info=patient_info,
         user_lat=req.user_location.lat,
         user_lon=req.user_location.lon,
@@ -70,20 +70,50 @@ def recommend_emergency_hospitals(req: EmergencyHospitalRequest):
         raise HTTPException(status_code=404, detail="추천 가능한 병원이 없습니다.")
 
     # =========================
-    # 5. 추천 결과 정리
+    # 5. 추천 결과 정리 (상세 정보 포함)
     # =========================
     hospitals = []
+
+    # hospital_id → features 매핑
+    feature_map = {
+        p["meta"]["hospital_id"]: p["features"]
+        for p in hospital_payloads
+    }
+
     for rank, r in enumerate(recommendations, start=1):
+        hid = r.get("hospital_id")
+        features = feature_map.get(hid, {})
+
         hospitals.append(
             HospitalItem(
                 rank=rank,
-                hospital_id=r.get("hospital_id"),
+                hospital_id=hid,
                 hospital_name=r.get("hospital_name"),
                 hospital_phone=r.get("hospital_phone"),
                 accept_prob=r.get("accept_prob"),
-                distance_km=r.get("distance_km"),
-                travel_time_min=r.get("travel_time_min")
 
+                # 거리 / 이동
+                distance_km=r.get("distance_km"),
+                travel_time_min=r.get("travel_time_min"),
+
+                # 병상 (실시간)
+                er_beds=features.get("er_beds"),
+                icu_beds=features.get("icu_beds"),
+                trauma_icu_beds=features.get("trauma_icu_beds"),
+
+                # 병상 (정적)
+                total_er_beds=features.get("total_er_beds"),
+                total_icu_beds=features.get("total_icu_beds"),
+                total_beds=features.get("total_beds"),
+
+                # 장비
+                ct_available=bool(features.get("ct_available")),
+                ventilator_available=bool(features.get("ventilator_available")),
+
+                # 기타
+                filter_level=features.get("filter_level"),
+                district_level=features.get("district_level"),
+                same_district=features.get("same_district"),
             )
         )
 

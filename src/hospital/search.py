@@ -6,7 +6,7 @@ from src.opendata.fetch_hospital_api import fetch_emergency_data
 from src.opendata.fetch_hospital_static_api import fetch_hospital_static_by_hpid
 from src.hospital.filtering import filter_hospitals
 from src.hospital.distance import add_distance_features
-
+from src.utils.geocode import latlon_to_region
 
 # =========================
 # 정적 병원 정보 CSV 경로
@@ -68,19 +68,30 @@ def get_static_info_by_hpid(
 
 
 # =========================
-# 메인 함수 (이름 유지)
+# 메인 함수
 # =========================
 def search_nearby_hospitals(
-    city: str,
-    district: str,
+    city: str | None,
+    district: str | None,
     patient_info: dict,
     user_lat: float,
     user_lon: float
 ) -> pd.DataFrame:
     """
-    현재 시/구 기준으로 인접 구까지 확장 탐색하여
+    위도/경도 기반으로 시/구를 자동 추론한 뒤,
+    현재 시/구 + 인접 구까지 확장 탐색하여
     실시간 응급 데이터 + 정적 병원 정보를 결합한 병원 후보 반환
     """
+
+    # =========================
+    # 0. 위경도 → 시/구 변환 (필요 시)
+    # =========================
+    if not city or not district:
+        try:
+            city, district = latlon_to_region(user_lat, user_lon)
+        except Exception as e:
+            print(f"[ERROR] Failed to resolve region from lat/lon: {e}")
+            return pd.DataFrame()
 
     all_results = []
     seen_hpid = set()
@@ -146,8 +157,10 @@ def search_nearby_hospitals(
 
         if not static_part_df.empty:
             filtered_df = pd.concat(
-                [filtered_df.reset_index(drop=True),
-                 static_part_df.reset_index(drop=True)],
+                [
+                    filtered_df.reset_index(drop=True),
+                    static_part_df.reset_index(drop=True)
+                ],
                 axis=1
             )
 
