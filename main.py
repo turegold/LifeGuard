@@ -16,7 +16,7 @@ def main():
     user_lat = 37.6213508
     user_lon = 127.0562448
 
-    emergency_text = "아버지가 칼에 흉부를 찔려 쓰러져 있고 피가 많이 납니다."
+    emergency_text = "어떤 남자가 흉부에 칼을 찔려서 쓰려져있습니다."
 
     # LLM에게 보낼 텍스트
     patient_info = parse_emergency_text(
@@ -31,6 +31,41 @@ def main():
         user_lat=user_lat,
         user_lon=user_lon
     )
+
+    # =========================
+    # 📌 후보 병원 CSV 저장 (실험 결과용)
+    # =========================
+    candidate_columns = [
+        "hpid",
+        "total_dutyname",
+        "distance_km",
+        "estimated_travel_time_min",
+        "hvec",
+        "hvicc",
+        "hvventiayn",
+        "hvctayn",
+        "hvmriayn",
+        "hv9",
+        "filter_level",
+    ]
+
+    candidate_df = result_df[
+        [c for c in candidate_columns if c in result_df.columns]
+    ]
+
+    PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+    DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    candidate_csv_path = os.path.join(DATA_DIR, "candidate_hospitals.csv")
+    candidate_df.to_csv(
+        candidate_csv_path,
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    print(f"✅ 후보 병원 CSV 저장 완료: {candidate_csv_path}")
+    print(candidate_df.head())
 
     if result_df.empty:
         print("❌ 병원 후보 없음")
@@ -81,7 +116,7 @@ def main():
         max_filter_level=2,
     )
 
-    print("\n🔥 추천 병원 Top-K 결과:")
+    print("\n🔥 추천 병원 Top-5 결과:")
     if not recommendations:
         print("⚠️ 조건(필터/threshold)에 의해 추천 결과가 없습니다.")
         return
