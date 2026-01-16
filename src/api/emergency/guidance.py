@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from src.rag.rag_guidance import generate_emergency_guidance
+from src.llm.emergency_parser import parse_emergency_text
 from src.api.emergency.schemas import (
     EmergencyGuidanceRequest,
     EmergencyGuidanceResponse
@@ -27,7 +28,16 @@ def get_emergency_guidance(
         )
 
     try:
-        guidance = generate_emergency_guidance(emergency_text)
+        patient_info = parse_emergency_text(emergency_text)
+        condition = patient_info.get("suspected_condition", "UNKNOWN")
+        print("[DEBUG]")
+        print(condition)
+
+        guidance = generate_emergency_guidance(
+            query=emergency_text,
+            condition=condition
+        )
+
         return guidance
 
     except Exception as e:

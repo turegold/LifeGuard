@@ -35,9 +35,14 @@ SYSTEM_PROMPT = """
 규칙:
 - 문서에 없는 내용은 절대 추가하지 말 것
 - 치료법, 약물, 처방, 진단 금지
-- 현재 상황과 직접 관련 없는 응급 상황은 제외
+- 현재 상황에서 실제로 발생 가능한 행동만 포함할 것
+- 다른 유형의 응급 상황에서만 의미 있는 행동은 제외할 것
 - 행동 지침만 간결하게 정리
 - 반드시 JSON 형식으로만 출력
+
+중요:
+- do_not_do 항목에는 현재 상황에서 실제로 사용자가 실수할 가능성이 있는 행동만 포함할 것
+- 참고 문헌에 있더라도 현재 상황과 무관하면 절대 포함하지 말 것
 """
 
 # =========================
@@ -52,6 +57,8 @@ USER_PROMPT_TEMPLATE = """
 
 위 문서를 참고하여,
 현재 상황에 맞는 응급 행동 가이드를 작성하라.
+현재 상황과 다른 유형의 응급 상황은 절대 포함하지 말 것.
+
 
 출력 JSON 형식:
 
@@ -91,26 +98,42 @@ def extract_json(text: str) -> dict:
 # =========================
 # RAG + Gemma 메인 함수
 # =========================
-def generate_emergency_guidance(query: str, top_k: int = 3) -> dict:
-    # 임베딩
+def generate_emergency_guidance(
+    query: str,
+    condition: str,
+    top_k: int = 5
+) -> dict:
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    # 벡터 DB 로드
     vectorstore = FAISS.load_local(
         VECTOR_DB_DIR,
         embeddings,
         allow_dangerous_deserialization=True
     )
 
+    # 1️⃣ 의미 기반 검색
     docs = vectorstore.similarity_search(query, k=top_k)
+
+    # 2️⃣ CATEGORY 필터링
+    if condition:
+        docs = [
+            doc for doc in docs
+            if f"[CATEGORY]\n{condition}" in doc.page_content
+        ]
 
     if not docs:
         return {
-            "situation_summary": "관련된 응급 가이드를 찾을 수 없습니다.",
-            "immediate_actions": [],
-            "do_not_do": []
+            "situation_summary": "현재 상황에 맞는 응급 가이드를 찾을 수 없습니다.",
+            "immediate_actions": [
+                "즉시 119에 신고",
+                "환자의 의식과 호흡 상태를 확인"
+            ],
+            "do_not_do": [
+                "임의로 판단하여 조치",
+                "음식이나 물 제공"
+            ]
         }
 
     documents_text = "\n\n".join(
@@ -133,14 +156,14 @@ def generate_emergency_guidance(query: str, top_k: int = 3) -> dict:
         temperature=0.2
     )
 
-    raw = response.choices[0].message.content
-    return extract_json(raw)
+    return extract_json(response.choices[0].message.content)
 
 # =========================
 # 단독 실행 테스트
 # =========================
 if __name__ == "__main__":
     result = generate_emergency_guidance(
-        "괴물이 있어요"
+        query="화상을 입었어요",
+        condition="RESPIRATORY"
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
