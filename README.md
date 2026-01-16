@@ -1,5 +1,5 @@
 # 🚑 LifeGuard  
-**실시간 공공데이터와 AI를 활용한 응급실 수용 가능성 추천 시스템**
+**실시간 공공데이터와 AI를 활용한 응급실 수용 가능성기반 병원 추천 시스템**
 
 https://lifeguard-front-ov6o-ij1b7wk7v-turegolds-projects.vercel.app/
 <p>1. 사용자 상태 입력</p>
