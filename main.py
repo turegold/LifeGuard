@@ -70,11 +70,11 @@ def main():
         encoding="utf-8-sig"
     )
 
-    print(f"✅ 후보 병원 CSV 저장 완료: {candidate_csv_path}")
+    print(f"후보 병원 CSV 저장 완료: {candidate_csv_path}")
     print(candidate_df.head())
 
     if result_df.empty:
-        print("❌ 병원 후보 없음")
+        print("병원 후보 없음")
         return
 
 
@@ -106,7 +106,7 @@ def main():
     csv_path = os.path.join(DATA_DIR, "ml_input_features.csv")
     ml_df.to_csv(csv_path, index=False, encoding="utf-8-sig")
 
-    print(f"✅ ML 입력용 feature CSV 생성 완료: {csv_path}")
+    print(f"ML 입력용 feature CSV 생성 완료: {csv_path}")
     print(ml_df.head())
 
     # ML 추천 (확률 예측 + threshold + Top-K)
@@ -117,9 +117,9 @@ def main():
         max_filter_level=2,
     )
 
-    print("\n🔥 추천 병원 Top-5 결과:")
+    print("\n추천 병원 Top-5 결과:")
     if not recommendations:
-        print("⚠️ 조건(필터/threshold)에 의해 추천 결과가 없습니다.")
+        print("조건(필터/threshold)에 의해 추천 결과가 없습니다.")
         return
 
     for rank, r in enumerate(recommendations, start=1):
@@ -151,7 +151,7 @@ def main():
     # 응급 대응 지침 (RAG)
     guidance = generate_emergency_guidance(emergency_text)
 
-    print("\n🚨 응급 대응 지침")
+    print("\n응급 대응 지침")
     print(json.dumps(guidance, ensure_ascii=False, indent=2))
 
 
