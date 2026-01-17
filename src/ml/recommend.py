@@ -15,23 +15,14 @@ def recommend_hospitals(
     top_k: int = 5,
     max_filter_level: int = 1,
 ):
-    """
-    hospital_payloads: [
-      {
-        "meta": {...},      # 병원 식별 정보 (이름, id 등)
-        "features": {...}   # ML feature dict (LLM/feature_builder 결과)
-      },
-      ...
-    ]
-    """
 
-    # 1️⃣ 모델 로드 (학습된 모델)
+    # 모델 로드 (학습된 모델)
     model = joblib.load(MODEL_PATH)
 
     rows = []
     metas = []
 
-    # 2️⃣ payload → DataFrame 변환
+    # payload → DataFrame 변환
     for item in hospital_payloads:
         features = item["features"]
         meta = item["meta"]
@@ -43,7 +34,6 @@ def recommend_hospitals(
         df_row = payload_to_df(features)
         rows.append(df_row)
 
-        # 거리랑 시간 추가함 -용민-
         metas.append({
             **meta,
             "distance_km": features.get("distance_km"),
@@ -55,20 +45,20 @@ def recommend_hospitals(
 
     X = pd.concat(rows, ignore_index=True)
 
-    # 3️⃣ ML 확률 예측
+    # ML 확률 예측
     probs = model.predict_proba(X)[:, 1]
 
-    # 4️⃣ 결과 합치기
+    # 결과 합치기
     result_df = pd.DataFrame(metas)
     result_df["accept_prob"] = probs
 
-    # 5️⃣ soft threshold (너무 낮은 확률 제거)
+    # soft threshold (너무 낮은 확률 제거)
     result_df = result_df[result_df["accept_prob"] >= threshold]
 
     if result_df.empty:
         return []
 
-    # 6️⃣ Top-K 랭킹
+    # Top-K 랭킹
     result_df = result_df.sort_values(
         "accept_prob", ascending=False
     ).head(top_k)

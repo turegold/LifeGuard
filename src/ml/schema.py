@@ -39,10 +39,6 @@ FEATURES: List[str] = [
 ]
 
 def payload_to_df(payload: Dict[str, Any]) -> pd.DataFrame:
-    """
-    입력 JSON(payload)을 모델 입력용 DataFrame(1행)으로 변환한다.
-    누락된 값은 에러를 내서(빨리 발견) 데이터 파이프라인을 안정적으로 만든다.
-    """
     missing = [k for k in FEATURES if k not in payload]
     if missing:
         raise KeyError(f"Missing keys in payload: {missing}")
