@@ -24,7 +24,6 @@ META_PATH = "models/accept_model_meta.json"
 
 
 def evaluate(y_true, proba, threshold: float = 0.3) -> dict:
-    """확률 예측(proba)로부터 기본 지표 계산"""
     pred = (proba >= threshold).astype(int)
     return {
         "threshold": float(threshold),
@@ -39,19 +38,19 @@ def evaluate(y_true, proba, threshold: float = 0.3) -> dict:
 
 
 def main(threshold: float = 0.3):
-    # 1) 데이터 로드
+    # 데이터 로드
     df = pd.read_csv(DATA_PATH)
 
-    # 2) 필수 컬럼 체크
+    # 필수 컬럼 체크
     missing_cols = [c for c in FEATURES + ["accept"] if c not in df.columns]
     if missing_cols:
         raise KeyError(f"CSV에 필요한 컬럼이 없습니다: {missing_cols}")
 
-    # 3) X/y 분리
+    # X/y 분리
     X = df[FEATURES].copy()
     y = df["accept"].astype(int).copy()
 
-    # 4) train/valid split (정답 비율 유지)
+    # train/valid split
     X_train, X_valid, y_train, y_valid = train_test_split(
         X,
         y,
@@ -60,13 +59,7 @@ def main(threshold: float = 0.3):
         stratify=y if len(set(y)) > 1 else None,
     )
 
-    # 5) 모델 파이프라인
-    # - StandardScaler: 연속형 값(거리/시간 등) 스케일 정규화
-    # - LogisticRegression: accept=1(수용) 확률 예측
-    #
-    # ✅ class_weight="balanced"
-    #   - accept=1이 희귀한 데이터에서, 1을 놓치는 실수(FN)에 더 큰 페널티를 주어
-    #     1을 더 잘 잡도록 학습 방향을 조정
+    # 모델 파이프라인
     model = Pipeline(
         steps=[
             ("scaler", StandardScaler()),
@@ -74,10 +67,10 @@ def main(threshold: float = 0.3):
         ]
     )
 
-    # 6) 학습
+    # 학습
     model.fit(X_train, y_train)
 
-    # 7) 검증(전체)
+    # 검증(전체)
     valid_proba = model.predict_proba(X_valid)[:, 1]
     metrics_all = evaluate(y_valid, valid_proba, threshold=threshold)
 
@@ -88,7 +81,7 @@ def main(threshold: float = 0.3):
     print("Confusion Matrix:", metrics_all["confusion_matrix"])
     print("\nClassification Report:\n", metrics_all["classification_report"])
 
-    # 8) filter_level 별 성능(있는 경우)
+    # filter_level 별 성능(있는 경우)
     by_level = None
     if "filter_level" in X_valid.columns:
         print("\n=== [VALID] Metrics by filter_level ===")
@@ -114,12 +107,12 @@ def main(threshold: float = 0.3):
                 f"ACC={m['accuracy']:.3f}  F1={m['f1']:.3f}"
             )
 
-    # 9) 모델 저장
+    # 모델 저장
     os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
     joblib.dump(model, MODEL_PATH)
     print(f"\n[OK] saved model: {MODEL_PATH}")
 
-    # 10) 메타 저장(재현/디버깅용)
+    # 메타 저장(재현/디버깅용)
     meta = {
         "data_path": DATA_PATH,
         "model_path": MODEL_PATH,
