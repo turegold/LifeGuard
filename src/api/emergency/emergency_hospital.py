@@ -20,14 +20,11 @@ router = APIRouter(prefix="/api/emergency", tags=["Emergency"])
 
 @router.post("/hospitals", response_model=EmergencyHospitalResponse)
 def recommend_emergency_hospitals(req: EmergencyHospitalRequest):
-    # =========================
+
     # 1. 환자 정보 파싱
-    # =========================
     patient_info = parse_emergency_text(req.emergency_text)
 
-    # =========================
     # 2. 병원 후보 탐색
-    # =========================
     result_df = search_nearby_hospitals(
         city=None,
         district=None,
@@ -39,9 +36,7 @@ def recommend_emergency_hospitals(req: EmergencyHospitalRequest):
     if result_df.empty:
         raise HTTPException(status_code=404, detail="병원 후보를 찾을 수 없습니다.")
 
-    # =========================
     # 3. ML Feature 생성
-    # =========================
     hospital_payloads = []
 
     for _, row in result_df.iterrows():
@@ -56,9 +51,7 @@ def recommend_emergency_hospitals(req: EmergencyHospitalRequest):
             "features": feature,
         })
 
-    # =========================
     # 4. 병원 추천 (ML)
-    # =========================
     recommendations = recommend_hospitals(
         hospital_payloads,
         threshold=0.01,
@@ -69,9 +62,7 @@ def recommend_emergency_hospitals(req: EmergencyHospitalRequest):
     if not recommendations:
         raise HTTPException(status_code=404, detail="추천 가능한 병원이 없습니다.")
 
-    # =========================
     # 5. 추천 결과 정리 (상세 정보 포함)
-    # =========================
     hospitals = []
 
     # hospital_id → features 매핑
@@ -117,9 +108,7 @@ def recommend_emergency_hospitals(req: EmergencyHospitalRequest):
             )
         )
 
-    # =========================
     # 6. 병원 추천 이유 (LLM)
-    # =========================
     final_results = merge_rank_with_payloads(
         recommendations,
         hospital_payloads
@@ -141,9 +130,7 @@ def recommend_emergency_hospitals(req: EmergencyHospitalRequest):
         ],
     )
 
-    # =========================
     # 7. 응답 반환
-    # =========================
     return EmergencyHospitalResponse(
         hospitals=hospitals,
         ranking_explanation=explanation

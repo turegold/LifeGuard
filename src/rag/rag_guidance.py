@@ -19,15 +19,13 @@ client = OpenAI(
 
 MODEL_NAME = "models/gemma-3-4b-it"
 
-# =========================
+
 # 경로
-# =========================
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 VECTOR_DB_DIR = os.path.join(PROJECT_ROOT, "data", "vectorstore")
 
-# =========================
-# SYSTEM PROMPT (Gemma용)
-# =========================
+
+# SYSTEM PROMPT
 SYSTEM_PROMPT = """
 너는 의료 진단이나 치료를 하지 않는다.
 아래에 제공된 문서 내용만 근거로 응급 행동 가이드를 작성한다.
@@ -45,9 +43,8 @@ SYSTEM_PROMPT = """
 - 참고 문헌에 있더라도 현재 상황과 무관하면 절대 포함하지 말 것
 """
 
-# =========================
+
 # USER PROMPT TEMPLATE
-# =========================
 USER_PROMPT_TEMPLATE = """
 [상황 설명]
 {query}
@@ -75,9 +72,7 @@ USER_PROMPT_TEMPLATE = """
 }}
 """
 
-# =========================
 # JSON 추출 유틸
-# =========================
 def extract_json(text: str) -> dict:
     text = text.strip()
 
@@ -95,9 +90,8 @@ def extract_json(text: str) -> dict:
 
     raise ValueError("JSON을 찾을 수 없습니다.")
 
-# =========================
+
 # RAG + Gemma 메인 함수
-# =========================
 def generate_emergency_guidance(
     query: str,
     condition: str,
@@ -113,15 +107,12 @@ def generate_emergency_guidance(
         allow_dangerous_deserialization=True
     )
 
-    # 1️⃣ 의미 기반 검색
-    docs = vectorstore.similarity_search(query, k=top_k)
+    docs = vectorstore.similarity_search(query, k=top_k * 5)
 
-    # 2️⃣ CATEGORY 필터링
     if condition:
-        docs = [
-            doc for doc in docs
-            if f"[CATEGORY]\n{condition}" in doc.page_content
-        ]
+        docs = [d for d in docs if d.metadata.get("category") == condition]
+
+    docs = docs[:top_k]
 
     if not docs:
         return {
@@ -158,12 +149,10 @@ def generate_emergency_guidance(
 
     return extract_json(response.choices[0].message.content)
 
-# =========================
 # 단독 실행 테스트
-# =========================
 if __name__ == "__main__":
     result = generate_emergency_guidance(
-        query="화상을 입었어요",
-        condition="RESPIRATORY"
+        query="어떤 남자가 흉부에 칼을 찔려서 쓰려져있습니다.",
+        condition="TRAUMA"
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))

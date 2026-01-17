@@ -6,9 +6,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from config import LLM_API_KEY
 
-# =========================
 # 환경 변수 로드
-# =========================
 load_dotenv()
 
 if not LLM_API_KEY:
@@ -22,10 +20,7 @@ client = OpenAI(
 MODEL_NAME = "models/gemma-3-4b-it"
 
 
-# =========================
 # SYSTEM PROMPT (Gemma용)
-# ⚠️ system role 사용 불가 → user prompt에 포함
-# =========================
 SYSTEM_PROMPT = """
 너는 의료 진단이나 치료 판단을 수행하지 않는다.
 너의 역할은 이미 계산된 병원 랭킹 결과를 바탕으로,
@@ -40,9 +35,7 @@ SYSTEM_PROMPT = """
 """
 
 
-# =========================
 # USER PROMPT TEMPLATE
-# =========================
 USER_PROMPT_TEMPLATE = """
 다음은 응급 환자 정보와 병원 추천 결과이다.
 
@@ -70,9 +63,7 @@ USER_PROMPT_TEMPLATE = """
 """
 
 
-# =========================
 # JSON 추출 유틸
-# =========================
 def extract_json(text: str) -> str:
     text = text.strip()
 
@@ -92,17 +83,15 @@ def extract_json(text: str) -> str:
     raise ValueError("JSON 영역을 찾을 수 없습니다.")
 
 
-# =========================
-# 병원 랭킹 설명 함수 (MAIN)
-# =========================
+# 병원 랭킹 설명 함수
 def explain_hospital_ranking(
     ranked_results: list,
     patient_info: dict
 ) -> dict:
-    """
-    ranked_results: recommend_hospitals 결과
-    patient_info: LLM emergency_parser 결과
-    """
+
+    # ranked_results: recommend_hospitals 결과
+    # patient_info: LLM emergency_parser 결과
+
 
     if not ranked_results:
         return {
@@ -151,9 +140,7 @@ def explain_hospital_ranking(
     return parsed
 
 
-# =========================
 # 단독 실행 테스트
-# =========================
 if __name__ == "__main__":
     dummy_patient = {
         "severity": "HIGH",
