@@ -8,10 +8,9 @@ from langchain_huggingface import HuggingFaceEmbeddings
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 VECTOR_DB_DIR = os.path.join(PROJECT_ROOT, "data", "vectorstore")
 
+# FAISS 벡터 DB에서 query와 의미적으로 가장 유사한 문서 k개 검색
 def search_emergency_guide(query: str, k: int = 3):
-    """
-    FAISS 벡터 DB에서 query와 의미적으로 가장 유사한 문서 k개 검색
-    """
+
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )

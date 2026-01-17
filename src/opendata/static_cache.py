@@ -34,7 +34,7 @@ def get_static_info_by_hpid(
         if not hit.empty:
             return hit.iloc[0].to_dict(), static_df
 
-    # ❌ CSV에 없으면 → API 호출
+    # CSV에 없으면 → API 호출
     static_info = fetch_hospital_static_by_hpid(hpid)
     if static_info is None:
         return None, static_df

@@ -1,15 +1,12 @@
-# src/utils/geocode.py
 import requests
 from dotenv import load_dotenv
-from openai import OpenAI
 from config import KAKAO_REST_API_KEY
 
 # 환경 변수 로드
 load_dotenv()
 def latlon_to_region(lat: float, lon: float) -> tuple[str, str]:
-    """
-    위경도를 시/구로 변환 (예: 서울특별시, 강남구)
-    """
+
+    # 위도/경도를 시/구로 변환 (예: 서울특별시, 강남구)
     url = "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json"
     headers = {
         "Authorization": f"KakaoAK {KAKAO_REST_API_KEY}"

@@ -20,14 +20,6 @@ def get_search_districts(
     current_district: str,
     max_level: int = 2
 ) -> list[tuple[str, int]]:
-    """
-    현재 시/구를 기준으로 탐색할 구 목록과 district_level 반환
-
-    district_level 의미:
-    0: 동일 구
-    1: 같은 시, 다른 구
-    2: (확장용, 현재는 동일 시 전체)
-    """
 
     regions = load_regions()
 

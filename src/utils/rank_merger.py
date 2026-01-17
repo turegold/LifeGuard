@@ -1,5 +1,3 @@
-
-
 def merge_rank_with_payloads(recommendations, hospital_payloads):
 
     payload_map = {

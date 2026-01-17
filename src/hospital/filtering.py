@@ -78,12 +78,7 @@ def filter_hospitals_strict(
     return df.reset_index(drop=True)
 
 
-
-
-"""
-    단계별로 필터링을 완화하며,
-    병원별 최초 통과 filter_level을 기록하여 반환
-"""
+# 단계별로 필터링을 완화하며, 병원별 최초 통과 filter_level을 기록하여 반환
 def filter_hospitals(
     hospital_df: pd.DataFrame,
     patient_info: dict,

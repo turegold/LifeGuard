@@ -1,3 +1,10 @@
+"""
+본 파일은 실제 API 서버와는 별도로,
+자연어 응급 상황 입력부터 병원 추천 및 응급 행동 가이드 제공까지의
+전체 시스템 흐름을 시나리오 형태로 한 번에 실행하기 위한 테스트/데모용 스크립트임.
+실제 서비스에서는 FastAPI 서버를 사용
+"""
+
 import os
 import pandas as pd
 import json
@@ -32,9 +39,8 @@ def main():
         user_lon=user_lon
     )
 
-    # =========================
-    # 📌 후보 병원 CSV 저장 (실험 결과용)
-    # =========================
+
+    # 후보 병원 CSV 저장
     candidate_columns = [
         "hpid",
         "total_dutyname",
@@ -71,17 +77,16 @@ def main():
         print("❌ 병원 후보 없음")
         return
 
-    # =========================
+
     # ML Feature 생성
-    # =========================
     ml_features = []
-    hospital_payloads = []  # ✅ recommend_hospitals에 넘길 리스트
+    hospital_payloads = []  # recommend_hospitals에 넘길 리스트
 
     for _, row in result_df.iterrows():
         feature = build_ml_features(row, patient_info)
         ml_features.append(feature)
 
-        # ✅ meta는 row가 아니라 feature에서 꺼내기 (None 방지)
+        # meta는 row가 아니라 feature에서 꺼내기 (None 방지)
         hospital_payloads.append({
             "meta": {
                 "hospital_name": feature.get("hospital_name"),
@@ -93,9 +98,7 @@ def main():
 
     ml_df = pd.DataFrame(ml_features)
 
-    # =========================
     # CSV 저장
-    # =========================
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
     DATA_DIR = os.path.join(PROJECT_ROOT, "data")
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -106,9 +109,7 @@ def main():
     print(f"✅ ML 입력용 feature CSV 생성 완료: {csv_path}")
     print(ml_df.head())
 
-    # =========================
-    # ✅ ML 추천 (확률 예측 + threshold + Top-K)
-    # =========================
+    # ML 추천 (확률 예측 + threshold + Top-K)
     recommendations = recommend_hospitals(
         hospital_payloads,
         threshold=0.01,
